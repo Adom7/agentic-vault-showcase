@@ -318,6 +318,197 @@
   .divider {
     border-top: 1px solid #1e293b;
   }
+
+  /* Diagram click affordance */
+  .diagram-wrap { cursor: zoom-in; position: relative; }
+  .diagram-wrap::after {
+    content: "";
+    position: absolute;
+    top: 14px; right: 14px;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>") center/16px no-repeat,
+      rgba(15,23,42,0.6);
+    border: 1px solid #1e293b;
+    opacity: 0;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+  }
+  .diagram-wrap:hover::after { opacity: 1; }
+
+  /* Zoom modal */
+  .zoom-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(4,8,16,0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    cursor: grab;
+  }
+  .zoom-modal.open { display: flex; }
+  .zoom-modal:active { cursor: grabbing; }
+  .zoom-stage {
+    width: 100%;
+    height: 100%;
+    max-width: 1400px;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+  }
+  .zoom-stage > * { transform-origin: 0 0; }
+  .zoom-close, .zoom-ctl {
+    position: absolute;
+    width: 44px; height: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: rgba(15,23,42,0.85);
+    border: 1px solid #334155;
+    border-radius: 12px;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: border-color 180ms ease, color 180ms ease;
+  }
+  .zoom-close:hover, .zoom-ctl:hover { border-color: #64748b; color: #fff; }
+  .zoom-close { top: 20px; right: 20px; }
+  .zoom-ctl.zoom-in { bottom: 20px; right: 20px; }
+  .zoom-ctl.zoom-out { bottom: 20px; right: 74px; }
+  .zoom-ctl.zoom-reset { bottom: 20px; right: 128px; }
+  .zoom-cap {
+    position: absolute;
+    top: 20px; left: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    background: rgba(15,23,42,0.85);
+    border: 1px solid #334155;
+    border-radius: 12px;
+  }
+  .zoom-hint {
+    position: absolute;
+    bottom: 20px; left: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: #64748b;
+    padding: 10px 14px;
+    background: rgba(15,23,42,0.65);
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+  }
+
+  /* VSCode-like file tree sidebar */
+  .fs-sidebar {
+    position: fixed;
+    top: 80px;
+    left: 16px;
+    width: 268px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: rgba(11,18,32,0.72);
+    border: 1px solid #1e293b;
+    border-radius: 14px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: #cbd5e1;
+    padding: 0;
+    z-index: 40;
+    display: none;
+  }
+  @media (min-width: 1280px) {
+    .fs-sidebar { display: block; }
+    .with-sidebar-gutter { padding-left: 300px; }
+  }
+  .fs-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid #1e293b;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .fs-header .dots { display: inline-flex; gap: 5px; }
+  .fs-header .dot-r { width: 10px; height: 10px; border-radius: 50%; background: #f87171; }
+  .fs-header .dot-y { width: 10px; height: 10px; border-radius: 50%; background: #fbbf24; }
+  .fs-header .dot-g { width: 10px; height: 10px; border-radius: 50%; background: #34d399; }
+  .fs-title { font-size: 10.5px; margin-left: auto; }
+  .fs-tree { padding: 8px 0 12px; }
+  .fs-item {
+    display: flex; align-items: center;
+    gap: 6px;
+    padding: 4px 12px 4px 0;
+    cursor: pointer;
+    color: #cbd5e1;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+    white-space: nowrap;
+  }
+  .fs-item:hover { background: rgba(56,189,248,0.07); color: #f1f5f9; }
+  .fs-item.active { border-left-color: #fb923c; background: rgba(251,146,60,0.08); color: #fff; }
+  .fs-item .indent { display: inline-block; }
+  .fs-item .caret {
+    width: 12px; height: 12px;
+    color: #64748b;
+    flex-shrink: 0;
+  }
+  .fs-folder > .fs-item .caret {
+    transition: transform 180ms ease;
+  }
+  .fs-folder.collapsed > .fs-item .caret { transform: rotate(-90deg); }
+  .fs-folder.collapsed > .fs-children { display: none; }
+  .fs-icon {
+    width: 14px; height: 14px;
+    flex-shrink: 0;
+  }
+  .fs-icon.folder { color: #fb923c; }
+  .fs-icon.folder-open { color: #fbbf24; }
+  .fs-icon.file-md { color: #38bdf8; }
+  .fs-icon.file-json { color: #a78bfa; }
+  .fs-icon.file-js { color: #fde047; }
+  .fs-icon.file-root { color: #64748b; }
+  .fs-children { display: block; }
+  .fs-badge {
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 9.5px;
+    background: rgba(56,189,248,0.12);
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .fs-search {
+    display: block;
+    margin: 10px 14px 2px;
+    width: calc(100% - 28px);
+    padding: 7px 10px 7px 28px;
+    background: rgba(15,23,42,0.8);
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    color: #e2e8f0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><path d='m21 21-4.35-4.35'/></svg>");
+    background-repeat: no-repeat;
+    background-position: 9px center;
+  }
+  .fs-search:focus { outline: none; border-color: #334155; }
+  .fs-item.hidden { display: none; }
 </style>
 </head>
 <body class="antialiased">
@@ -347,8 +538,200 @@
 
 <span id="top"></span>
 
+<!-- VSCode-like file tree sidebar -->
+<aside class="fs-sidebar" aria-label="Arborescence du vault">
+  <div class="fs-header">
+    <span class="dots"><span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span></span>
+    <span class="fs-title">agentic-vault/</span>
+  </div>
+  <input type="text" class="fs-search" placeholder="Chercher un fichier…" id="fs-search-input" aria-label="Chercher un fichier">
+  <div class="fs-tree" id="fs-tree">
+
+    <!-- _claude/ -->
+    <div class="fs-folder" data-folder="_claude">
+      <a class="fs-item" data-target="#structure">
+        <span class="indent" style="width:2px"></span>
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg class="fs-icon folder-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+        <span>_claude</span>
+        <span class="fs-badge">LLM</span>
+      </a>
+      <div class="fs-children">
+        <div class="fs-folder collapsed" data-folder="profile">
+          <a class="fs-item" style="padding-left:22px" data-target="#nomenclature">
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+            <span>profile</span>
+          </a>
+          <div class="fs-children">
+            <a class="fs-item" style="padding-left:52px" data-target="#nomenclature">
+              <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>USR_adlane_profile.md</span>
+            </a>
+          </div>
+        </div>
+        <div class="fs-folder collapsed" data-folder="projects">
+          <a class="fs-item" style="padding-left:22px" data-target="#nomenclature">
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+            <span>projects</span>
+          </a>
+          <div class="fs-children">
+            <a class="fs-item" style="padding-left:52px" data-target="#nomenclature">
+              <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>PRJ_*.md</span>
+            </a>
+          </div>
+        </div>
+        <div class="fs-folder collapsed" data-folder="feedback">
+          <a class="fs-item" style="padding-left:22px" data-target="#principles">
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+            <span>feedback</span>
+          </a>
+          <div class="fs-children">
+            <a class="fs-item" style="padding-left:52px" data-target="#principles">
+              <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>FB_rigueur.md</span>
+            </a>
+          </div>
+        </div>
+        <div class="fs-folder collapsed" data-folder="references">
+          <a class="fs-item" style="padding-left:22px" data-target="#stack">
+            <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+            <span>references</span>
+          </a>
+          <div class="fs-children">
+            <a class="fs-item" style="padding-left:52px" data-target="#stack">
+              <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>REF_architecture.md</span>
+            </a>
+          </div>
+        </div>
+        <a class="fs-item" style="padding-left:22px" data-target="#overview">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>MEMORY.md</span>
+          <span class="fs-badge" style="background:rgba(251,146,60,0.14);color:#fb923c">index</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Concepts/ -->
+    <div class="fs-folder collapsed" data-folder="Concepts">
+      <a class="fs-item" data-target="#structure">
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+        <span>Concepts</span>
+      </a>
+      <div class="fs-children">
+        <a class="fs-item" style="padding-left:40px" data-target="#sessions">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Context Window.md</span>
+        </a>
+        <a class="fs-item" style="padding-left:40px" data-target="#stack">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Moindre Privilège.md</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Outils/ -->
+    <div class="fs-folder collapsed" data-folder="Outils">
+      <a class="fs-item" data-target="#stack">
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+        <span>Outils</span>
+      </a>
+      <div class="fs-children">
+        <a class="fs-item" style="padding-left:40px" data-target="#stack">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Claude Code.md</span>
+        </a>
+        <a class="fs-item" style="padding-left:40px" data-target="#stack">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Telegram Bot API.md</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Projets/ -->
+    <div class="fs-folder collapsed" data-folder="Projets">
+      <a class="fs-item" data-target="#nomenclature">
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+        <span>Projets</span>
+      </a>
+      <div class="fs-children">
+        <a class="fs-item" style="padding-left:40px" data-target="#nomenclature">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>NOTE_*.md</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Sessions/ -->
+    <div class="fs-folder collapsed" data-folder="Sessions">
+      <a class="fs-item" data-target="#sessions">
+        <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+        <span>Sessions</span>
+      </a>
+      <div class="fs-children">
+        <a class="fs-item" style="padding-left:40px" data-target="#sessions">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>SES_*.md</span>
+        </a>
+        <a class="fs-item" style="padding-left:40px" data-target="#sessions">
+          <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>COMPACT_*.md</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Dump/ -->
+    <a class="fs-item" data-target="#nomenclature">
+      <svg class="caret" style="visibility:hidden" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      <svg class="fs-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+      <span>Dump</span>
+    </a>
+
+    <!-- NOMENCLATURE.md -->
+    <a class="fs-item" data-target="#nomenclature" style="padding-left:12px">
+      <svg class="fs-icon file-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>NOMENCLATURE.md</span>
+    </a>
+
+    <!-- .git/ faded -->
+    <a class="fs-item" style="opacity:.45">
+      <svg class="caret" style="visibility:hidden" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      <svg class="fs-icon file-root" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 2"/></svg>
+      <span>.git</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Zoom modal -->
+<div class="zoom-modal" id="zoom-modal" role="dialog" aria-modal="true" aria-label="Diagramme zoomé">
+  <div class="zoom-cap" id="zoom-cap">diagramme</div>
+  <div class="zoom-stage" id="zoom-stage"></div>
+  <button class="zoom-ctl zoom-reset" id="zoom-reset" aria-label="Réinitialiser le zoom" title="Réinitialiser">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+  </button>
+  <button class="zoom-ctl zoom-out" id="zoom-out" aria-label="Dézoomer" title="Dézoomer">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </button>
+  <button class="zoom-ctl zoom-in" id="zoom-in" aria-label="Zoomer" title="Zoomer">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </button>
+  <button class="zoom-close" id="zoom-close" aria-label="Fermer le zoom" title="Fermer (Echap)">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <div class="zoom-hint">scroll/pinch pour zoomer · drag pour déplacer · echap pour fermer</div>
+</div>
+
 <!-- HERO -->
-<header class="max-w-6xl mx-auto px-5 sm:px-8 pt-28 sm:pt-36 pb-20">
+<header class="max-w-6xl mx-auto px-5 sm:px-8 pt-28 sm:pt-36 pb-20 with-sidebar-gutter">
   <div class="reveal">
     <span class="pill"><span class="pulse"></span>méthode éprouvée · production-ready</span>
   </div>
@@ -396,7 +779,7 @@
 </header>
 
 <!-- OVERVIEW -->
-<section id="overview" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="overview" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">01 — Vue d'ensemble</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Le vault, source de vérité unique</h2>
@@ -431,7 +814,7 @@ flowchart LR
 </section>
 
 <!-- STRUCTURE -->
-<section id="structure" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="structure" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">02 — Structure</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Deux couches : humaine et LLM-dense</h2>
@@ -502,7 +885,7 @@ flowchart LR
 </section>
 
 <!-- NOMENCLATURE -->
-<section id="nomenclature" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="nomenclature" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">03 — Nomenclature</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Des préfixes, une règle universelle</h2>
@@ -545,16 +928,16 @@ flowchart LR
   <div class="diagram-wrap mt-10 reveal">
     <pre class="mermaid">
 flowchart TD
-    START{Quel type de contenu ?}
-    START --&gt;|Note lisible humain sur projet| NOTE[NOTE_]
-    START --&gt;|Cahier projet dense pour IA| PRJ[PRJ_]
-    START --&gt;|Règle de comportement pour IA| FB[FB_]
-    START --&gt;|Credential ou architecture| REF[REF_]
-    START --&gt;|Log daté d'une session| SES[SES_]
-    START --&gt;|Concept ou théorie| CNCPT[CNCPT_]
-    START --&gt;|Doc d'un outil| OUTIL[OUTIL_]
-    START --&gt;|Définition d'agent IA| AGENT[AGENT_]
-    START --&gt;|Brouillon non trié| DUMP[DUMP_]
+    START{"Quel type de contenu ?"}
+    START --&gt;|"Note lisible humain"| NOTE[NOTE_]
+    START --&gt;|"Cahier projet dense pour IA"| PRJ[PRJ_]
+    START --&gt;|"Règle de comportement IA"| FB[FB_]
+    START --&gt;|"Credential ou architecture"| REF[REF_]
+    START --&gt;|"Log daté de session"| SES[SES_]
+    START --&gt;|"Concept ou théorie"| CNCPT[CNCPT_]
+    START --&gt;|"Doc d outil"| OUTIL[OUTIL_]
+    START --&gt;|"Définition d agent IA"| AGENT[AGENT_]
+    START --&gt;|"Brouillon non trié"| DUMP[DUMP_]
 
     style START fill:#1e293b,color:#f1f5f9,stroke:#fb923c,stroke-width:2px
     </pre>
@@ -563,7 +946,7 @@ flowchart TD
 </section>
 
 <!-- SESSIONS -->
-<section id="sessions" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="sessions" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">04 — Sessions</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Cycle de vie & compaction du contexte</h2>
@@ -623,7 +1006,7 @@ flowchart TD
     GEN --&gt; CONTENT[Contenu obligatoire :<br/>- Projets actifs<br/>- Tâches en cours<br/>- Décisions clés<br/>- Pièges découverts<br/>- Message au futur moi]
 
     CONTENT --&gt; COMMIT[Commit + push]
-    COMMIT --&gt; COMPACT[/compact Claude]
+    COMMIT --&gt; COMPACT["/compact Claude"]
     COMPACT --&gt; NEW[Nouvelle session allégée<br/>reprend sur le COMPACT_]
 
     style TRIGGER fill:#fb923c,color:#0b1220,stroke:#f97316
@@ -658,7 +1041,7 @@ flowchart TD
 </section>
 
 <!-- STACK -->
-<section id="stack" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="stack" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">05 — Stack d'exécution</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Containers Docker isolés, MCP modulaires</h2>
@@ -747,7 +1130,7 @@ flowchart LR
 </section>
 
 <!-- GIT -->
-<section id="git" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="git" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">06 — Git workflow</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Commit par micro-avancée, jamais de batch</h2>
@@ -774,7 +1157,7 @@ gitGraph
 </section>
 
 <!-- PRINCIPLES -->
-<section id="principles" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+<section id="principles" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider with-sidebar-gutter">
   <div class="reveal">
     <span class="section-tag">07 — Principes</span>
     <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-10">7 principes fondateurs</h2>
@@ -829,7 +1212,7 @@ gitGraph
 </section>
 
 <!-- CONTACT -->
-<section id="contact" class="max-w-6xl mx-auto px-5 sm:px-8 py-24">
+<section id="contact" class="max-w-6xl mx-auto px-5 sm:px-8 py-24 with-sidebar-gutter">
   <div class="card rounded-3xl p-10 sm:p-14 text-center bg-gradient-to-br from-orange-500/10 via-transparent to-cyan-500/10 border-orange-500/30 reveal">
     <h2 class="font-display text-3xl sm:text-5xl font-bold mb-5">Envie d'implémenter cette architecture&nbsp;?</h2>
     <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-9 leading-relaxed">
@@ -848,13 +1231,14 @@ gitGraph
   </div>
 </section>
 
-<footer class="max-w-6xl mx-auto px-5 sm:px-8 py-10 text-center text-sm text-slate-500">
+<footer class="max-w-6xl mx-auto px-5 sm:px-8 py-10 text-center text-sm text-slate-500 with-sidebar-gutter">
   <p class="font-mono text-xs">agentic-vault · méthode de travail humain × IA</p>
   <p class="mt-2 text-slate-600 text-xs">Document neutralisé — version publique. Diagrammes rendus via Mermaid.</p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/panzoom@9.4.3/dist/panzoom.min.js"></script>
 <script>
-  // Scroll reveal (no-op under reduced motion)
+  // 1) Scroll reveal
   (function () {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const els = document.querySelectorAll('.reveal');
@@ -871,6 +1255,185 @@ gitGraph
       });
     }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
     els.forEach(el => io.observe(el));
+  })();
+
+  // 2) VSCode-like sidebar — toggle folders + search + active section highlight
+  (function () {
+    // Toggle folders
+    document.querySelectorAll('.fs-folder > .fs-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.fs-folder') !== item.parentElement) return;
+        e.preventDefault();
+        item.parentElement.classList.toggle('collapsed');
+      });
+    });
+
+    // Click a file/folder → scroll to target section
+    document.querySelectorAll('.fs-item[data-target]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const target = item.getAttribute('data-target');
+        if (!target) return;
+        // Only scroll if click is on file (not folder toggle)
+        const isFolder = item.parentElement.classList.contains('fs-folder') && item.querySelector('.caret[style*="visibility:hidden"]') === null;
+        if (isFolder && item.querySelector('.caret') && item.querySelector('.caret').getAttribute('style') !== 'visibility:hidden') {
+          // Folder — let toggle handle it, but also scroll
+        }
+        const el = document.querySelector(target);
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Search filter
+    const searchInput = document.getElementById('fs-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('.fs-item').forEach(it => {
+          if (!q) { it.classList.remove('hidden'); return; }
+          const txt = it.textContent.toLowerCase();
+          it.classList.toggle('hidden', !txt.includes(q));
+        });
+        // Expand folders when searching
+        if (q) {
+          document.querySelectorAll('.fs-folder.collapsed').forEach(f => f.classList.remove('collapsed'));
+        }
+      });
+    }
+
+    // Active section highlight via IntersectionObserver
+    const navItems = Array.from(document.querySelectorAll('.fs-item[data-target]'));
+    const sectionToItems = new Map();
+    navItems.forEach(it => {
+      const t = it.getAttribute('data-target');
+      if (!t) return;
+      if (!sectionToItems.has(t)) sectionToItems.set(t, []);
+      sectionToItems.get(t).push(it);
+    });
+    const sections = Array.from(sectionToItems.keys()).map(id => document.querySelector(id)).filter(Boolean);
+    if ('IntersectionObserver' in window && sections.length) {
+      const io2 = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            navItems.forEach(it => it.classList.remove('active'));
+            const id = '#' + entry.target.id;
+            (sectionToItems.get(id) || []).forEach(it => it.classList.add('active'));
+          }
+        });
+      }, { threshold: 0.25, rootMargin: '-120px 0px -50% 0px' });
+      sections.forEach(s => io2.observe(s));
+    }
+  })();
+
+  // 3) Zoom modal for diagrams with panzoom
+  (function () {
+    const modal = document.getElementById('zoom-modal');
+    const stage = document.getElementById('zoom-stage');
+    const cap = document.getElementById('zoom-cap');
+    const btnClose = document.getElementById('zoom-close');
+    const btnIn = document.getElementById('zoom-in');
+    const btnOut = document.getElementById('zoom-out');
+    const btnReset = document.getElementById('zoom-reset');
+    let pz = null;
+    let currentCaption = '';
+
+    function openZoom(diagramWrap) {
+      const mer = diagramWrap.querySelector('.mermaid svg');
+      if (!mer) return;
+      const captionEl = diagramWrap.querySelector('.diagram-cap');
+      currentCaption = captionEl ? captionEl.textContent.trim() : 'diagramme';
+      cap.textContent = currentCaption;
+
+      // Clone SVG so original stays in place
+      stage.innerHTML = '';
+      const clone = mer.cloneNode(true);
+      clone.style.maxWidth = 'none';
+      clone.style.height = 'auto';
+      clone.style.width = 'auto';
+      // Preserve intrinsic size from Mermaid
+      const bbox = mer.getBoundingClientRect();
+      const w = Math.min(1300, Math.max(700, bbox.width * 1.2));
+      clone.setAttribute('width', w);
+      stage.appendChild(clone);
+
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+
+      // Initialize panzoom on the stage content
+      if (pz) { try { pz.dispose(); } catch(_){} pz = null; }
+      if (window.panzoom) {
+        pz = window.panzoom(clone, {
+          maxZoom: 5,
+          minZoom: 0.4,
+          bounds: false,
+          smoothScroll: false,
+          zoomDoubleClickSpeed: 1.8
+        });
+        // Center initially
+        requestAnimationFrame(() => {
+          const stageRect = stage.getBoundingClientRect();
+          const cRect = clone.getBoundingClientRect();
+          pz.moveTo((stageRect.width - cRect.width) / 2, (stageRect.height - cRect.height) / 2);
+        });
+      }
+    }
+
+    function closeZoom() {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+      if (pz) { try { pz.dispose(); } catch(_){} pz = null; }
+      stage.innerHTML = '';
+    }
+
+    // Wire up every diagram-wrap
+    function bindDiagrams() {
+      document.querySelectorAll('.diagram-wrap').forEach(dw => {
+        if (dw.dataset.zoomBound) return;
+        dw.dataset.zoomBound = '1';
+        dw.setAttribute('role', 'button');
+        dw.setAttribute('tabindex', '0');
+        dw.setAttribute('aria-label', 'Agrandir le diagramme');
+        dw.addEventListener('click', (e) => {
+          // Don't open modal if click is on text-only caption area only; open on diagram
+          openZoom(dw);
+        });
+        dw.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openZoom(dw); }
+        });
+      });
+    }
+
+    // Mermaid renders async — wait for SVGs to appear
+    const mo = new MutationObserver(() => {
+      if (document.querySelector('.mermaid svg')) {
+        bindDiagrams();
+      }
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+    // Initial binding in case already rendered
+    setTimeout(bindDiagrams, 600);
+    setTimeout(bindDiagrams, 2000);
+
+    btnClose.addEventListener('click', closeZoom);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeZoom(); });
+    document.addEventListener('keydown', (e) => {
+      if (!modal.classList.contains('open')) return;
+      if (e.key === 'Escape') closeZoom();
+    });
+    btnIn.addEventListener('click', () => { if (pz) pz.smoothZoom(stage.clientWidth/2, stage.clientHeight/2, 1.5); });
+    btnOut.addEventListener('click', () => { if (pz) pz.smoothZoom(stage.clientWidth/2, stage.clientHeight/2, 0.66); });
+    btnReset.addEventListener('click', () => {
+      if (!pz) return;
+      pz.zoomAbs(0, 0, 1);
+      const clone = stage.firstChild;
+      if (clone) {
+        const stageRect = stage.getBoundingClientRect();
+        const cRect = clone.getBoundingClientRect();
+        pz.moveTo((stageRect.width - cRect.width) / 2, (stageRect.height - cRect.height) / 2);
+      }
+    });
   })();
 </script>
 
