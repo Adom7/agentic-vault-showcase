@@ -1,1 +1,264 @@
-YAML_PLACEHOLDER
+# ═══════════════════════════════════════════════════════════════════════
+#  AGENTIC VAULT — Architecture de travail humain × IA
+#  Manifeste compact — version neutralisée pour partage externe
+# ═══════════════════════════════════════════════════════════════════════
+meta:
+  name: agentic-vault
+  version: "1.0"
+  date: 2026-04-23
+  philosophy: |
+    Un seul cerveau, plusieurs instances. Un vault Git partagé sert de
+    mémoire unique entre un développeur humain et N agents IA (Claude
+    Code, Codex...). Chaque session démarre en lisant la même source de
+    vérité, et termine en la mettant à jour.
+  principles:
+    - source_de_verite_unique
+    - reversibilite_totale
+    - separation_des_couches
+    - micro_avancees_commitees
+    - isolation_par_contexte
+    - moindre_privilege
+    - rigueur_sur_vitesse
+
+vault:
+  layers:
+    human:
+      description: Lisible en Obsidian, éditée manuellement
+      folders:
+        - { path: Concepts/, role: "Définitions techniques, théories" }
+        - { path: Outils/,   role: "Docs des outils du stack" }
+        - { path: Projets/,  role: "Notes humaines (1 dossier/projet)" }
+        - { path: Sessions/, role: "Logs datés + compacts pré-compaction" }
+        - { path: Dump/,     role: "Brouillons non classifiés" }
+    llm_dense:
+      description: Structurée pour l'IA, exclue du graphe Obsidian
+      folders:
+        - { path: _claude/profile/,    role: "USR_*.md — profil utilisateur" }
+        - { path: _claude/projects/,   role: "PRJ_*.md — cahiers projet" }
+        - { path: _claude/feedback/,   role: "FB_*.md — règles de comportement" }
+        - { path: _claude/references/, role: "REF_*.md — credentials, archi" }
+        - { path: _claude/features/,   role: "FEAT_*.md — features transverses" }
+        - { path: _claude/team/,       role: "AGENT_*.md, TEAM_*.md" }
+        - { path: _claude/tracking/,   role: "TRK_*.md — stats sessions" }
+      entry_point: _claude/MEMORY.md
+      auto_loaded: true
+  rules:
+    - "Les deux couches sont toujours synchronisées via git"
+    - "_claude/ : exclu du graphe Obsidian, lu via filesystem direct"
+    - "Pas de suppression sans décision explicite"
+
+nomenclature:
+  format: "<PREFIX>_[<TEMPORAL>_]<slug>[_v<N>].<ext>"
+  slug_rules:
+    - minuscules_uniquement
+    - underscores_separateurs
+    - ASCII_pur
+    - pas_d_accents
+    - pas_d_espaces
+    - pas_de_tirets
+  temporal_formats:
+    jour:        "YYYY-MM-DD"
+    semaine_iso: "YYYY-W<nn>"
+    heure:       "HHhMM"
+    sequence:    "<NNN>"
+  prefixes:
+    PRJ_:     { type: "Cahier projet LLM-dense",       folder: "_claude/projects/",      temporal: false }
+    NOTE_:    { type: "Note projet humaine",           folder: "Projets/",               temporal: false }
+    FB_:      { type: "Règle comportement IA",         folder: "_claude/feedback/",      temporal: false }
+    REF_:     { type: "Credential / archi / token",    folder: "_claude/references/",    temporal: false }
+    USR_:     { type: "Profil utilisateur",            folder: "_claude/profile/",       temporal: false }
+    SES_:     { type: "Log de session daté",           folder: "Sessions/",              temporal: "NNN_YYYY-MM-DD" }
+    PSY_:     { type: "Analyse comportementale",       folder: "Projets/Introspection/", temporal: "NNN_YYYY-MM-DD" }
+    WK_:      { type: "Weekly summary",                folder: "Projets/Introspection/", temporal: "YYYY-W<nn>" }
+    COMPACT_: { type: "Sauvegarde pré-compaction",     folder: "Sessions/_compact/",     temporal: "YYYY-MM-DD_HHhMM_<pct>pct" }
+    CNCPT_:   { type: "Concept / théorie",             folder: "Concepts/",              temporal: false }
+    OUTIL_:   { type: "Doc outil / stack",             folder: "Outils/",                temporal: false }
+    FEAT_:    { type: "Feature transversale",          folder: "_claude/features/",      temporal: false }
+    AGENT_:   { type: "Définition d'un agent IA",      folder: "_claude/team/",          temporal: false }
+    TEAM_:    { type: "Orchestrateur d'agents",        folder: "_claude/team/",          temporal: false }
+    CDC_:     { type: "Cahier des charges projet",     folder: "Projets/<nom>/",         temporal: false, versioned: true }
+    DUMP_:    { type: "Brouillon non classifié",       folder: "Dump/",                  temporal: "YYYY-MM-DD" }
+    TRK_:     { type: "Tracking / stats sessions",     folder: "_claude/tracking/",      temporal: false }
+    VIS_:     { type: "Vision / stratégie / roadmap",  folder: "Projets/",               temporal: false }
+
+session:
+  startup:
+    auto_executed: true
+    description: "Exécuté SANS être demandé au début de chaque session"
+    steps:
+      - { id: 1, action: "git pull origin main",                            why: "Jamais de divergence entre instances" }
+      - { id: 2, action: "Lire /tmp/session_startup_result.json",          why: "Détecter un crash précédent" }
+      - { id: 3, action: "Lire MEMORY.md + PRJ_*.md pertinents",           why: "Charger le contexte de travail" }
+      - { id: 4, action: "Update session_current.json (sujets/projets)",   why: "Tracking comportemental" }
+      - { id: 5, action: "CronCreate snapshot 30min (avec guard activité)", why: "Backup régulier indépendant des MA" }
+  work:
+    sprint:
+      structure: |
+        Projet
+         └── Objectif global
+              └── Sprint N — "titre du sprint"
+                   ├── MA 1 : description courte
+                   ├── MA 2 : ...
+                   └── MA 3 : ...
+      declaration:
+        when:   "Au début d'un travail significatif"
+        action: "Déclarer le Sprint en cours + lister les MAs prévus"
+    micro_avancement:
+      term: "MA (jamais 'micro-session' — confusion terminologique)"
+      principle: "Sauvegarder immédiatement après chaque MA, sans attendre l'utilisateur"
+      save_strategies:
+        code:         "git commit -m 'MA: <description>' + push"
+        obsidian:     "màj fichier .md + git push vault"
+        cdc_planning: "màj du fichier concerné + push"
+      rules:
+        - "Save MA = étape transparente (pas une pause)"
+        - "Continuer immédiatement sans attendre l'utilisateur"
+        - "Jamais de réécriture complète sans avoir sauvegardé l'état précédent"
+        - "Le save MA garantit qu'on ne perd jamais plus d'1 MA en cas de crash"
+      complementarite:
+        cron_30min:  "Tracking comportemental (session_current.json)"
+        save_MA:     "Progression du travail (code, docs, CDC)"
+        coexistence: "Les deux coexistent, rôles distincts"
+  compact:
+    trigger:
+      threshold_normal: "65-70% du contexte"
+      threshold_urgent: "> 85% du contexte"
+      proactive: true
+    file_format: "COMPACT_<YYYY-MM-DD>_<HHhMM>_<pct>pct.md"
+    template:
+      frontmatter:
+        type: compact
+        context_pct: "<int>"
+        date: "<YYYY-MM-DD>"
+        session_topics: ["<sujet1>", "<sujet2>"]
+      sections:
+        - "## Projets actifs (1 ligne par projet)"
+        - "## Tâches en cours [ ]"
+        - "## Décisions clés de la session"
+        - "## Pièges découverts"
+        - "## À dire à la prochaine instance"
+  fin:
+    trigger: "Attendre explicitement 'fin de session' de l'utilisateur"
+    never: ["dire bonne nuit", "présumer fin", "conclure de soi-même"]
+    steps:
+      - "1. date +%s → heure réelle"
+      - "2. Logger dans TRK_sessions.md (durée, projets, mode, ton, résultat)"
+      - "3. Générer WK_YYYY-Wnn.md (lire session_analysis.md d'abord)"
+      - "4. git push vault"
+      - "5. Telegram : rapport session"
+      - "6. Reset session_current.json + session_analysis.md + push"
+
+cdc:
+  obligation: |
+    Tout projet DOIT avoir un dossier dans Projets/ (jamais un .md racine
+    isolé) et un fichier CDC_v1.md dans ce dossier.
+  immutable_rules:
+    - "Tout projet a un dossier dédié"
+    - "Le CDC est OBLIGATOIRE dans chaque dossier projet"
+    - "On ne supprime JAMAIS un CDC, on ne l'écrase JAMAIS"
+    - "Révision majeure = nouveau fichier CDC_v2.md (v1 reste intact)"
+    - "Le CDC est la source de vérité du 'pourquoi' et du 'quoi'"
+  versioning:
+    pattern:           "CDC_v<N>.md"
+    initial:           "CDC_v1.md"
+    on_major_revision: "Créer CDC_v(N+1).md, conserver les précédents"
+  structure:
+    obligatory_sections:
+      - "Vision (le pourquoi en 1 paragraphe)"
+      - "Objectifs chiffrables"
+      - "Architecture globale"
+      - "Composants techniques"
+      - "Sprints (découpage temporel)"
+    optional_sections:
+      - "Personas / cibles"
+      - "Risques identifiés"
+      - "Dépendances externes"
+  folder_layout: |
+    Projets/<NomProjet>/
+     ├── CDC_v1.md    ← OBLIGATOIRE — version initiale
+     ├── CDC_v2.md    ← si révision majeure
+     ├── README.md    ← état actuel, liens, résumé opérationnel
+     └── Architecture.md, Sprints.md ← optionnels
+
+backup:
+  layers:
+    git:
+      frequency: "Après chaque MA"
+      remote:    "GitHub (privé ou public selon contexte)"
+      branches:
+        main:    "Source de vérité stable"
+        feature: "claude/<slug> — travail d'une session ou feature"
+    cron_snapshot:
+      frequency: "*/30 * * * *"
+      guard:     "activité récente détectée"
+      target:    "session_current.json + session_analysis.md"
+      purpose:   "Tracking comportemental indépendant des MA"
+  sync:
+    rule:      "_claude/ ↔ Obsidian — toujours synchronisés"
+    forbidden: "Modifier l'un sans l'autre"
+  pre_push_checklist:
+    - "Scan secrets (.env, credentials, tokens)"
+    - "Scan PII (emails, noms, données sensibles)"
+    - "Vérifier .gitignore"
+    - "Identité git correcte (email, name)"
+
+stack:
+  containers:
+    base_image: "node:20-bookworm-slim"
+    pre_installed:
+      - "git, openssh-client, curl, ripgrep, vim, less, sudo"
+      - "@anthropic-ai/claude-code (global npm)"
+      - "@openai/codex (global npm)"
+    user: "non-root (uid 1001), sudo sans mot de passe"
+    instances:
+      perso:    { network: "perso",    git_identity: "perso" }
+      client_X: { network: "axonovia", git_identity: "pro" }
+    isolation_rules:
+      - "Réseaux Docker séparés par contexte"
+      - "Identités git distinctes"
+      - "Aucun volume monté (tout vit dans le container)"
+      - "Secrets via Infisical, jamais en .env clair"
+    lifecycle:
+      safe:      ["docker stop", "docker start", "docker exec"]
+      forbidden: ["docker compose down", "docker rm"]
+      reason:    "down/rm efface le contenu (pas de volume)"
+  mcp_servers:
+    description: "Bridges entre l'IA et les services externes"
+    config_file: "~/.claude.json (Claude Code) | ~/.codex/config.toml (Codex)"
+    examples:
+      - { name: "notion",     purpose: "Lecture/écriture workspace Notion" }
+      - { name: "github",     purpose: "Issues, PRs, repos" }
+      - { name: "telegram",   purpose: "Bot reports + Q&A" }
+      - { name: "vercel",     purpose: "Deploys + monitoring" }
+      - { name: "playwright", purpose: "Automation browser" }
+  git_workflow:
+    branches:
+      main:    "Source de vérité stable"
+      feature: "claude/<slug> — travail isolé"
+    commit_pattern:
+      - "MA: <description>            — micro-avancée"
+      - "docker: <description>        — modif infra"
+      - "feedback: <description>      — règle de comportement"
+      - "session: <action> SID=<id>   — événement session"
+    rules:
+      - "Pull avant tout"
+      - "Commit par MA, jamais batch"
+      - "Push systématique"
+
+behavior_rules:
+  - id: rigor
+    rule: "Jamais de validation approximative. 'Je ne sais pas' > invention"
+  - id: no_yes_man
+    rule: "Challenger avant d'exécuter. Corriger explicitement une erreur utilisateur"
+  - id: no_confirmation
+    rule: "Agir directement quand le contexte est clair"
+  - id: micro_advance
+    rule: "Commiter après chaque unité atomique de travail"
+  - id: future_self
+    rule: "Documenter pour la prochaine instance, jamais 'c'est évident'"
+  - id: quality_8_10
+    rule: "Quality gate 8/10 minimum. Ne jamais dégrader pour économiser des tokens"
+  - id: check_docs_first
+    rule: "Lire la documentation existante avant de poser une question"
+  - id: credentials_memory
+    rule: "Un credential donné une fois = utilisé immédiatement et stocké en mémoire"
