@@ -4,11 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agentic Vault — Architecture Claude Code</title>
-<meta name="description" content="Architecture de travail entre un développeur humain et des agents IA (Claude Code, Codex). Vault partagé, mémoire persistante, workflow agentique.">
+<meta name="description" content="Une méthode de travail entre un développeur humain et plusieurs agents IA (Claude Code, Codex). Vault Git partagé, mémoire persistante, zéro dérive entre sessions.">
 <meta property="og:title" content="Agentic Vault — Architecture Claude Code">
 <meta property="og:description" content="Un seul cerveau, plusieurs instances. Vault partagé, mémoire persistante, zéro dérive entre sessions.">
 <meta property="og:type" content="website">
+<meta name="theme-color" content="#0b1220">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui'],
+          sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        },
+        colors: {
+          ink: { 950: '#070b16', 900: '#0b1220', 850: '#0f172a', 800: '#111a2e' },
+          line: '#1e293b',
+          accent: { DEFAULT: '#fb923c', soft: 'rgba(251,146,60,0.15)' },
+          sky2: { DEFAULT: '#38bdf8', soft: 'rgba(56,189,248,0.12)' },
+        }
+      }
+    }
+  }
+</script>
 <style>
   :root {
     --bg: #0b1220;
@@ -21,366 +44,581 @@
   }
   html { scroll-behavior: smooth; }
   body {
-    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
     min-height: 100vh;
+    overflow-x: hidden;
   }
-  .accent { color: var(--accent); }
-  .accent-2 { color: var(--accent-2); }
+  .font-display { font-family: 'Space Grotesk', ui-sans-serif, system-ui; letter-spacing: -0.02em; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* Ambient background — static glowing mesh, no motion cost */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(251,146,60,0.10), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 25%, rgba(56,189,248,0.10), transparent 55%),
+      radial-gradient(ellipse 90% 40% at 50% 110%, rgba(244,114,182,0.08), transparent 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 0%, #000 30%, transparent 75%);
+  }
+
   .card {
-    background: rgba(17, 26, 46, 0.6);
+    background: rgba(17, 26, 46, 0.55);
     border: 1px solid var(--border);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: border-color 220ms ease, background 220ms ease;
   }
+  .card:hover { border-color: #334155; background: rgba(17,26,46,0.72); }
+
   .diagram-wrap {
     background: #fff;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset;
+    transition: transform 260ms ease, box-shadow 260ms ease;
   }
-  .diagram-wrap img {
-    width: 100%;
-    height: auto;
-    display: block;
+  .diagram-wrap:hover { box-shadow: 0 30px 80px -24px rgba(0,0,0,0.7); }
+  .diagram-wrap img { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .diagram-cap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: #64748b;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 10px;
   }
+
   .gradient-text {
-    background: linear-gradient(90deg, #fb923c 0%, #f472b6 50%, #38bdf8 100%);
+    background: linear-gradient(92deg, #fb923c 0%, #f472b6 45%, #38bdf8 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
+
   .pill {
-    display: inline-block;
-    padding: 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 500;
-    background: rgba(251, 146, 60, 0.15);
+    background: rgba(251, 146, 60, 0.12);
     color: var(--accent);
-    border: 1px solid rgba(251, 146, 60, 0.3);
+    border: 1px solid rgba(251, 146, 60, 0.28);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
   }
+  .pill .pulse {
+    width: 6px; height: 6px; border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(251,146,60,0.7);
+    animation: pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(251,146,60,0.7); }
+    70%  { box-shadow: 0 0 0 10px rgba(251,146,60,0); }
+    100% { box-shadow: 0 0 0 0 rgba(251,146,60,0); }
+  }
+
   .prefix-code {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family: 'JetBrains Mono', monospace;
     color: var(--accent-2);
     font-weight: 600;
   }
-  .dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 8px;
+
+  .section-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #94a3b8;
+  }
+  .section-tag::before {
+    content: "";
+    width: 28px; height: 1px;
+    background: linear-gradient(90deg, transparent, #475569);
+  }
+
+  /* Bento tiles */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 18px;
+  }
+  .bento > * { grid-column: span 6; }
+  @media (min-width: 768px) {
+    .bento .span-3 { grid-column: span 3; }
+    .bento .span-2 { grid-column: span 2; }
+    .bento .span-4 { grid-column: span 4; }
+    .bento .span-6 { grid-column: span 6; }
+  }
+
+  /* Entry reveal — scroll-triggered via IntersectionObserver */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity 700ms ease, transform 700ms ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal.in { opacity: 1; transform: none; transition: none; }
+    .pill .pulse { animation: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  /* Nav pill */
+  .nav-wrap {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    width: calc(100% - 24px);
+    max-width: 960px;
+  }
+  .nav-inner {
+    background: rgba(11,18,32,0.75);
+    border: 1px solid #1e293b;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 999px;
+    padding: 10px 16px;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 22px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
+    color: #0b1220;
+    font-weight: 600;
+    box-shadow: 0 10px 30px -10px rgba(251,146,60,0.55), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: filter 180ms ease, transform 180ms ease;
+    cursor: pointer;
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:active { transform: translateY(1px); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 22px;
+    border-radius: 14px;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    font-weight: 600;
+    transition: border-color 180ms ease, background 180ms ease;
+    cursor: pointer;
+  }
+  .btn-ghost:hover { border-color: #64748b; background: rgba(148,163,184,0.06); }
+
+  .stat-card {
+    background: rgba(17,26,46,0.55);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    transition: border-color 220ms ease, background 220ms ease;
+  }
+  .stat-card:hover { border-color: #334155; }
+
+  .divider {
+    border-top: 1px solid #1e293b;
   }
 </style>
 </head>
 <body class="antialiased">
 
+<div class="ambient"></div>
+<div class="grid-overlay"></div>
+
 <!-- NAV -->
-<nav class="sticky top-0 z-50 backdrop-blur-md bg-slate-900/70 border-b border-slate-800">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-cyan-400"></div>
-      <span class="font-bold text-lg">Agentic Vault</span>
-    </div>
+<nav class="nav-wrap">
+  <div class="nav-inner flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-cyan-400 shadow-inner"></span>
+      <span class="font-display font-bold text-[15px] tracking-tight">Agentic Vault</span>
+    </a>
     <div class="hidden md:flex gap-6 text-sm text-slate-300">
-      <a href="#overview" class="hover:text-white">Overview</a>
-      <a href="#structure" class="hover:text-white">Structure</a>
-      <a href="#sessions" class="hover:text-white">Sessions</a>
-      <a href="#stack" class="hover:text-white">Stack</a>
-      <a href="#principles" class="hover:text-white">Principes</a>
-      <a href="#contact" class="hover:text-white accent">Contact</a>
+      <a href="#overview" class="hover:text-white transition-colors">Overview</a>
+      <a href="#structure" class="hover:text-white transition-colors">Structure</a>
+      <a href="#sessions" class="hover:text-white transition-colors">Sessions</a>
+      <a href="#stack" class="hover:text-white transition-colors">Stack</a>
+      <a href="#principles" class="hover:text-white transition-colors">Principes</a>
     </div>
+    <a href="#contact" class="text-sm font-medium text-orange-400 hover:text-orange-300 transition-colors">
+      Contact →
+    </a>
   </div>
 </nav>
 
+<span id="top"></span>
+
 <!-- HERO -->
-<header class="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-16">
-  <span class="pill mb-6">Méthode éprouvée · Production-ready</span>
-  <h1 class="text-4xl sm:text-6xl font-bold leading-tight mt-4">
+<header class="max-w-6xl mx-auto px-5 sm:px-8 pt-28 sm:pt-36 pb-20">
+  <div class="reveal">
+    <span class="pill"><span class="pulse"></span>méthode éprouvée · production-ready</span>
+  </div>
+  <h1 class="font-display text-5xl sm:text-7xl font-bold leading-[1.02] mt-7 reveal">
     Un seul cerveau.<br>
     <span class="gradient-text">Plusieurs instances d'IA.</span>
   </h1>
-  <p class="mt-6 text-xl text-slate-300 max-w-3xl leading-relaxed">
-    Une architecture de travail entre un développeur humain et plusieurs agents IA (Claude Code, Codex…) centrée sur un <strong class="text-white">vault partagé, versionné et persistant</strong>. Chaque session démarre avec le même contexte. Aucune dérive. Zéro perte d'info entre deux conversations.
+  <p class="mt-7 text-lg sm:text-xl text-slate-300 max-w-2xl leading-relaxed reveal">
+    Une architecture de travail entre un développeur humain et plusieurs agents IA —
+    <span class="font-mono text-cyan-300 text-base">Claude Code</span>,
+    <span class="font-mono text-cyan-300 text-base">Codex</span> — centrée sur un
+    <strong class="text-white font-semibold">vault Git partagé, versionné, persistant</strong>.
+    Chaque session démarre avec le même contexte. Aucune dérive. Zéro perte d'info entre deux conversations.
   </p>
-  <div class="mt-10 flex flex-wrap gap-4">
-    <a href="#overview" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-900 font-semibold transition">
-      Explorer l'architecture →
+  <div class="mt-10 flex flex-wrap gap-4 reveal">
+    <a href="#overview" class="btn-primary">
+      Explorer l'architecture
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
     </a>
-    <a href="#contact" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-200 font-semibold transition">
-      Demander l'implémentation
+    <a href="Architecture_Claude_Overview.pdf" class="btn-ghost" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Télécharger le PDF
     </a>
   </div>
-  <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="card rounded-xl p-4">
-      <div class="text-3xl font-bold accent">9</div>
-      <div class="text-sm text-slate-400 mt-1">diagrammes</div>
+
+  <!-- Stat strip -->
+  <div class="mt-20 grid grid-cols-2 md:grid-cols-4 gap-4 reveal">
+    <div class="stat-card">
+      <div class="font-display text-3xl sm:text-4xl font-bold text-orange-400">9</div>
+      <div class="text-sm text-slate-400 mt-1 font-mono">diagrammes</div>
     </div>
-    <div class="card rounded-xl p-4">
-      <div class="text-3xl font-bold accent-2">14</div>
-      <div class="text-sm text-slate-400 mt-1">préfixes normalisés</div>
+    <div class="stat-card">
+      <div class="font-display text-3xl sm:text-4xl font-bold text-cyan-400">14</div>
+      <div class="text-sm text-slate-400 mt-1 font-mono">préfixes normalisés</div>
     </div>
-    <div class="card rounded-xl p-4">
-      <div class="text-3xl font-bold accent">2</div>
-      <div class="text-sm text-slate-400 mt-1">couches mémoire</div>
+    <div class="stat-card">
+      <div class="font-display text-3xl sm:text-4xl font-bold text-orange-400">2</div>
+      <div class="text-sm text-slate-400 mt-1 font-mono">couches mémoire</div>
     </div>
-    <div class="card rounded-xl p-4">
-      <div class="text-3xl font-bold accent-2">∞</div>
-      <div class="text-sm text-slate-400 mt-1">sessions persistantes</div>
+    <div class="stat-card">
+      <div class="font-display text-3xl sm:text-4xl font-bold text-cyan-400">∞</div>
+      <div class="text-sm text-slate-400 mt-1 font-mono">sessions persistantes</div>
     </div>
   </div>
 </header>
 
 <!-- OVERVIEW -->
-<section id="overview" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#fb923c"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">01 — Vue d'ensemble</span>
+<section id="overview" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">01 — Vue d'ensemble</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Le vault, source de vérité unique</h2>
+    <p class="text-slate-300 text-lg max-w-3xl leading-relaxed">
+      Chaque session d'IA commence en lisant la même source, et termine en la mettant à jour. Pas de RAG externe, pas de base vectorielle — juste du Markdown versionné dans Git, structuré pour être lu par les humains <strong class="text-white">et</strong> par les modèles.
+    </p>
   </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Le vault comme source de vérité unique</h2>
-  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed">
-    Chaque session d'IA commence en lisant la même source, et termine en la mettant à jour. Pas de RAG externe, pas de base vectorielle : juste du Markdown versionné dans Git, structuré pour être lu par les humains <strong class="text-white">et</strong> par les modèles.
-  </p>
-  <div class="diagram-wrap mt-10">
-    <img src="diagrams/diag_1.png" alt="Architecture vue d'ensemble">
+  <div class="diagram-wrap mt-12 reveal">
+    <img src="diagrams/diag_1.png" alt="Schéma global : humain, vault Git, sessions IA multiples, serveurs MCP">
+    <div class="diagram-cap">diag_1 — flux global humain ↔ vault ↔ sessions</div>
   </div>
 </section>
 
 <!-- STRUCTURE -->
-<section id="structure" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#38bdf8"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">02 — Structure</span>
+<section id="structure" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">02 — Structure</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Deux couches : humaine et LLM-dense</h2>
+    <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-12">
+      Le vault sépare physiquement deux mondes : les notes lisibles dans Obsidian, et le dossier <code class="font-mono text-cyan-300 bg-slate-800/60 px-2 py-0.5 rounded">_claude/</code> pensé pour être consommé par des modèles. Chaque couche a ses règles, ses préfixes, ses contraintes.
+    </p>
   </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Double couche : humaine et LLM-dense</h2>
-  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
-    Le vault sépare physiquement deux mondes : les notes lisibles dans Obsidian, et le dossier <code class="text-cyan-300">_claude/</code> pensé pour être consommé par des modèles. Chaque couche a ses règles, ses préfixes, ses contraintes.
-  </p>
-  <div class="grid md:grid-cols-2 gap-6">
-    <div class="diagram-wrap">
-      <img src="diagrams/diag_2.png" alt="Structure du vault">
+  <div class="bento reveal">
+    <div class="diagram-wrap span-4">
+      <img src="diagrams/diag_2.png" alt="Structure du vault : dossiers humains et LLM-dense côte à côte">
+      <div class="diagram-cap">diag_2 — arborescence du vault</div>
     </div>
-    <div class="diagram-wrap">
-      <img src="diagrams/diag_4.png" alt="Double couche mémoire">
+    <div class="diagram-wrap span-2">
+      <img src="diagrams/diag_4.png" alt="Schéma de la double couche mémoire humaine / LLM">
+      <div class="diagram-cap">diag_4 — couches mémoire</div>
     </div>
   </div>
 </section>
 
 <!-- NOMENCLATURE -->
-<section id="nomenclature" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#fb923c"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">03 — Nomenclature</span>
-  </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Des préfixes, une règle universelle</h2>
-  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
-    Chaque fichier porte un préfixe qui détermine son type, son emplacement et son cycle de vie. Format :
-    <code class="text-cyan-300 bg-slate-800 px-2 py-1 rounded ml-2">&lt;PREFIX&gt;_[&lt;TEMPOREL&gt;_]&lt;slug&gt;.md</code>
-  </p>
-
-  <div class="overflow-x-auto card rounded-xl">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="text-left border-b border-slate-700">
-          <th class="p-3 text-slate-400">Préfixe</th>
-          <th class="p-3 text-slate-400">Usage</th>
-          <th class="p-3 text-slate-400">Dossier</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-800">
-        <tr><td class="p-3 prefix-code">PRJ_</td><td class="p-3">Cahier projet LLM-dense</td><td class="p-3 text-slate-400">_claude/projects/</td></tr>
-        <tr><td class="p-3 prefix-code">NOTE_</td><td class="p-3">Note projet humaine</td><td class="p-3 text-slate-400">Projets/</td></tr>
-        <tr><td class="p-3 prefix-code">FB_</td><td class="p-3">Règle de comportement IA</td><td class="p-3 text-slate-400">_claude/feedback/</td></tr>
-        <tr><td class="p-3 prefix-code">REF_</td><td class="p-3">Credential, architecture, token</td><td class="p-3 text-slate-400">_claude/references/</td></tr>
-        <tr><td class="p-3 prefix-code">USR_</td><td class="p-3">Profil utilisateur</td><td class="p-3 text-slate-400">_claude/profile/</td></tr>
-        <tr><td class="p-3 prefix-code">SES_</td><td class="p-3">Log de session daté</td><td class="p-3 text-slate-400">Sessions/</td></tr>
-        <tr><td class="p-3 prefix-code">COMPACT_</td><td class="p-3">Sauvegarde pré-compaction</td><td class="p-3 text-slate-400">Sessions/_compact/</td></tr>
-        <tr><td class="p-3 prefix-code">CNCPT_</td><td class="p-3">Concept, théorie</td><td class="p-3 text-slate-400">Concepts/</td></tr>
-        <tr><td class="p-3 prefix-code">OUTIL_</td><td class="p-3">Doc d'un outil / stack</td><td class="p-3 text-slate-400">Outils/</td></tr>
-        <tr><td class="p-3 prefix-code">FEAT_</td><td class="p-3">Feature transversale</td><td class="p-3 text-slate-400">_claude/features/</td></tr>
-        <tr><td class="p-3 prefix-code">AGENT_</td><td class="p-3">Définition d'un agent IA</td><td class="p-3 text-slate-400">_claude/team/</td></tr>
-        <tr><td class="p-3 prefix-code">TEAM_</td><td class="p-3">Orchestrateur d'agents</td><td class="p-3 text-slate-400">_claude/team/</td></tr>
-      </tbody>
-    </table>
+<section id="nomenclature" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">03 — Nomenclature</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Des préfixes, une règle universelle</h2>
+    <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
+      Chaque fichier porte un préfixe qui détermine son type, son emplacement et son cycle de vie. Format :
+    </p>
+    <div class="inline-block font-mono text-[0.95rem] text-cyan-300 bg-slate-800/70 border border-slate-700 px-4 py-2.5 rounded-lg mb-12">
+      &lt;PREFIX&gt;_[&lt;TEMPOREL&gt;_]&lt;slug&gt;.md
+    </div>
   </div>
 
-  <div class="diagram-wrap mt-10">
-    <img src="diagrams/diag_3.png" alt="Arbre de décision préfixes">
+  <div class="card rounded-2xl overflow-hidden reveal">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left border-b border-slate-700 bg-slate-900/40">
+            <th class="px-5 py-3.5 text-slate-400 font-mono text-xs uppercase tracking-wider">Préfixe</th>
+            <th class="px-5 py-3.5 text-slate-400 font-mono text-xs uppercase tracking-wider">Usage</th>
+            <th class="px-5 py-3.5 text-slate-400 font-mono text-xs uppercase tracking-wider">Dossier</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60">
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">PRJ_</td><td class="px-5 py-3 text-slate-200">Cahier projet LLM-dense</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/projects/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">NOTE_</td><td class="px-5 py-3 text-slate-200">Note projet humaine</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">Projets/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">FB_</td><td class="px-5 py-3 text-slate-200">Règle de comportement IA</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/feedback/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">REF_</td><td class="px-5 py-3 text-slate-200">Credential, architecture, token</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/references/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">USR_</td><td class="px-5 py-3 text-slate-200">Profil utilisateur</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/profile/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">SES_</td><td class="px-5 py-3 text-slate-200">Log de session daté</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">Sessions/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">COMPACT_</td><td class="px-5 py-3 text-slate-200">Sauvegarde pré-compaction</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">Sessions/_compact/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">CNCPT_</td><td class="px-5 py-3 text-slate-200">Concept, théorie</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">Concepts/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">OUTIL_</td><td class="px-5 py-3 text-slate-200">Doc d'un outil / stack</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">Outils/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">FEAT_</td><td class="px-5 py-3 text-slate-200">Feature transversale</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/features/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">AGENT_</td><td class="px-5 py-3 text-slate-200">Définition d'un agent IA</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/team/</td></tr>
+          <tr class="hover:bg-slate-800/30 transition-colors"><td class="px-5 py-3 prefix-code">TEAM_</td><td class="px-5 py-3 text-slate-200">Orchestrateur d'agents</td><td class="px-5 py-3 text-slate-400 font-mono text-xs">_claude/team/</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="diagram-wrap mt-10 reveal">
+    <img src="diagrams/diag_3.png" alt="Arbre de décision pour choisir le bon préfixe selon le type de contenu">
+    <div class="diagram-cap">diag_3 — arbre de décision des préfixes</div>
   </div>
 </section>
 
 <!-- SESSIONS -->
-<section id="sessions" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#38bdf8"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">04 — Sessions</span>
+<section id="sessions" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">04 — Sessions</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Cycle de vie & compaction du contexte</h2>
+    <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-12">
+      Une session suit un protocole strict : <strong class="text-white">pull → lecture mémoire → travail en micro-avancées commitées → compaction proactive → push final</strong>. Le contexte d'un modèle est une ressource limitée : on le gère, on ne l'attend pas.
+    </p>
   </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Cycle de vie & compaction du contexte</h2>
-  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
-    Une session suit un protocole strict : <strong class="text-white">pull → lecture mémoire → travail en micro-avancées commitées → compaction proactive → push final</strong>. Le contexte d'un modèle est une ressource limitée : on le gère, on ne l'attend pas.
-  </p>
 
-  <div class="grid md:grid-cols-2 gap-6">
-    <div>
-      <h3 class="text-xl font-semibold mb-4 text-slate-200">Cycle de vie</h3>
-      <div class="diagram-wrap">
-        <img src="diagrams/diag_5.png" alt="Cycle de vie d'une session">
-      </div>
+  <div class="bento reveal">
+    <div class="diagram-wrap span-3">
+      <img src="diagrams/diag_5.png" alt="Schéma du cycle de vie d'une session : pull, lecture, travail, compaction, push">
+      <div class="diagram-cap">diag_5 — cycle de vie d'une session</div>
     </div>
-    <div>
-      <h3 class="text-xl font-semibold mb-4 text-slate-200">Protocole de compaction</h3>
-      <div class="diagram-wrap">
-        <img src="diagrams/diag_6.png" alt="Protocole compaction">
-      </div>
+    <div class="diagram-wrap span-3">
+      <img src="diagrams/diag_6.png" alt="Protocole de compaction du contexte LLM">
+      <div class="diagram-cap">diag_6 — protocole de compaction</div>
     </div>
   </div>
 
-  <div class="card rounded-xl p-6 mt-10">
-    <h4 class="font-semibold text-slate-200 mb-3">Déclencheurs de compaction</h4>
+  <div class="card rounded-2xl p-7 mt-10 reveal">
+    <h4 class="font-display font-semibold text-slate-100 mb-5 flex items-center gap-2.5">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Déclencheurs de compaction
+    </h4>
     <div class="grid sm:grid-cols-3 gap-4 text-sm">
-      <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-        <div class="text-green-400 font-semibold">&lt; 65%</div>
-        <div class="text-slate-300 mt-1">Continuer normalement</div>
+      <div class="p-4 bg-emerald-500/8 border border-emerald-500/30 rounded-xl">
+        <div class="text-emerald-400 font-display font-semibold text-lg">&lt; 65%</div>
+        <div class="text-slate-300 mt-1.5">Continuer normalement</div>
       </div>
-      <div class="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
-        <div class="text-orange-400 font-semibold">65–70%</div>
-        <div class="text-slate-300 mt-1">Déclencher COMPACT</div>
+      <div class="p-4 bg-orange-500/8 border border-orange-500/30 rounded-xl">
+        <div class="text-orange-400 font-display font-semibold text-lg">65–70%</div>
+        <div class="text-slate-300 mt-1.5">Déclencher COMPACT</div>
       </div>
-      <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
-        <div class="text-red-400 font-semibold">&gt; 85%</div>
-        <div class="text-slate-300 mt-1">Compaction urgente</div>
+      <div class="p-4 bg-red-500/8 border border-red-500/30 rounded-xl">
+        <div class="text-red-400 font-display font-semibold text-lg">&gt; 85%</div>
+        <div class="text-slate-300 mt-1.5">Compaction urgente</div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- STACK -->
-<section id="stack" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#fb923c"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">05 — Stack d'exécution</span>
-  </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Containers Docker isolés, MCP modulaires</h2>
-  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
-    Chaque contexte de travail (perso, client A, client B…) tourne dans son propre container : <strong class="text-white">réseau séparé, identité git propre, aucun volume monté</strong>. Les intégrations externes passent par des MCP servers, ajoutables à chaud.
-  </p>
-
-  <div class="grid md:grid-cols-2 gap-6">
-    <div class="diagram-wrap">
-      <img src="diagrams/diag_7.png" alt="Containers Docker">
-    </div>
-    <div class="diagram-wrap">
-      <img src="diagrams/diag_8.png" alt="Intégrations MCP">
-    </div>
+<section id="stack" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">05 — Stack d'exécution</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Containers Docker isolés, MCP modulaires</h2>
+    <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-12">
+      Chaque contexte de travail (perso, client A, client B…) tourne dans son propre container :
+      <strong class="text-white">réseau séparé, identité git propre, aucun volume monté</strong>.
+      Les intégrations externes passent par des serveurs MCP, ajoutables à chaud.
+    </p>
   </div>
 
-  <div class="grid sm:grid-cols-2 gap-4 mt-10">
-    <div class="card rounded-xl p-5">
-      <div class="text-orange-400 text-sm font-semibold mb-2">IMAGE DE BASE</div>
-      <ul class="text-sm text-slate-300 space-y-1">
-        <li>• Node 20 Debian slim</li>
-        <li>• git, openssh-client, ripgrep, vim</li>
-        <li>• Claude Code + Codex installés globalement</li>
-        <li>• User non-root avec sudo</li>
+  <div class="bento reveal">
+    <div class="diagram-wrap span-3">
+      <img src="diagrams/diag_7.png" alt="Schéma des containers Docker isolés par contexte">
+      <div class="diagram-cap">diag_7 — containers isolés</div>
+    </div>
+    <div class="diagram-wrap span-3">
+      <img src="diagrams/diag_8.png" alt="Schéma des intégrations MCP branchées aux sessions">
+      <div class="diagram-cap">diag_8 — serveurs MCP</div>
+    </div>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-5 mt-10 reveal">
+    <div class="card rounded-2xl p-6">
+      <div class="flex items-center gap-2.5 mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8 12 13 3 8"/><path d="M3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        <div class="text-orange-400 font-mono text-xs font-semibold uppercase tracking-wider">Image de base</div>
+      </div>
+      <ul class="text-[0.95rem] text-slate-300 space-y-2 leading-relaxed">
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>Node 20 Debian slim</li>
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>git, openssh-client, ripgrep, vim</li>
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>Claude Code + Codex installés globalement</li>
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>User non-root avec sudo</li>
       </ul>
     </div>
-    <div class="card rounded-xl p-5">
-      <div class="text-cyan-400 text-sm font-semibold mb-2">ISOLATION</div>
-      <ul class="text-sm text-slate-300 space-y-1">
-        <li>• Réseaux Docker séparés</li>
-        <li>• Identités git distinctes par container</li>
-        <li>• Secrets via Infisical, jamais en .env</li>
-        <li>• Pas de `docker compose down` — stop/start uniquement</li>
+    <div class="card rounded-2xl p-6">
+      <div class="flex items-center gap-2.5 mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M3 9h18"/></svg>
+        <div class="text-cyan-400 font-mono text-xs font-semibold uppercase tracking-wider">Isolation</div>
+      </div>
+      <ul class="text-[0.95rem] text-slate-300 space-y-2 leading-relaxed">
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>Réseaux Docker séparés</li>
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>Identités git distinctes par container</li>
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>Secrets via Infisical, jamais en .env</li>
+        <li class="flex gap-2.5"><span class="text-slate-600 mt-0.5">—</span>Pas de <code class="font-mono text-cyan-300/90 text-[0.85em]">docker compose down</code> — stop/start uniquement</li>
       </ul>
     </div>
   </div>
 </section>
 
 <!-- GIT -->
-<section id="git" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#38bdf8"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">06 — Git workflow</span>
+<section id="git" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">06 — Git workflow</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-6">Commit par micro-avancée, jamais de batch</h2>
+    <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-12">
+      Une unité atomique de travail = un commit. L'historique raconte exactement comment l'IA a pensé, étape par étape. Un crash en plein milieu ? Le dernier commit est toujours récupérable depuis n'importe quelle machine.
+    </p>
   </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Commit par micro-avancée, jamais de batch</h2>
-  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
-    Une unité atomique de travail = un commit. L'historique raconte exactement comment l'IA a pensé, étape par étape. Un crash en plein milieu ? Le dernier commit est toujours récupérable depuis n'importe quelle machine.
-  </p>
-  <div class="diagram-wrap">
-    <img src="diagrams/diag_9.png" alt="Git workflow">
+  <div class="diagram-wrap reveal">
+    <img src="diagrams/diag_9.png" alt="Schéma du workflow git : micro-commits séquentiels, push régulier, reprise cross-machine">
+    <div class="diagram-cap">diag_9 — workflow git par micro-avancées</div>
   </div>
 </section>
 
 <!-- PRINCIPLES -->
-<section id="principles" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
-  <div class="flex items-center gap-3 mb-4">
-    <span class="dot" style="background:#fb923c"></span>
-    <span class="text-sm uppercase tracking-widest text-slate-400">07 — Principes</span>
+<section id="principles" class="max-w-6xl mx-auto px-5 sm:px-8 py-20 divider">
+  <div class="reveal">
+    <span class="section-tag">07 — Principes</span>
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mt-5 mb-10">7 principes fondateurs</h2>
   </div>
-  <h2 class="text-3xl sm:text-4xl font-bold mb-10">7 principes fondateurs</h2>
 
-  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-    <div class="card rounded-xl p-6">
-      <div class="text-2xl accent font-bold mb-3">01</div>
-      <h3 class="font-semibold mb-2">Source de vérité unique</h3>
-      <p class="text-sm text-slate-400">Le vault Git. Pas d'info critique ailleurs.</p>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 reveal">
+    <div class="card rounded-2xl p-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400 mb-4" aria-hidden="true"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">01</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-slate-100">Source de vérité unique</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Le vault Git. Pas d'info critique ailleurs.</p>
     </div>
-    <div class="card rounded-xl p-6">
-      <div class="text-2xl accent-2 font-bold mb-3">02</div>
-      <h3 class="font-semibold mb-2">Réversibilité totale</h3>
-      <p class="text-sm text-slate-400">Tout est versionné, tout est récupérable.</p>
+    <div class="card rounded-2xl p-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400 mb-4" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">02</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-slate-100">Réversibilité totale</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Tout est versionné, tout est récupérable.</p>
     </div>
-    <div class="card rounded-xl p-6">
-      <div class="text-2xl accent font-bold mb-3">03</div>
-      <h3 class="font-semibold mb-2">Séparation des couches</h3>
-      <p class="text-sm text-slate-400">Humain ↔ LLM-dense, jamais mélangés.</p>
+    <div class="card rounded-2xl p-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400 mb-4" aria-hidden="true"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="18" rx="1.5"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">03</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-slate-100">Séparation des couches</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Humain ↔ LLM-dense, jamais mélangés.</p>
     </div>
-    <div class="card rounded-xl p-6">
-      <div class="text-2xl accent-2 font-bold mb-3">04</div>
-      <h3 class="font-semibold mb-2">Micro-avancées commitées</h3>
-      <p class="text-sm text-slate-400">Aucun travail perdu sur un crash.</p>
+    <div class="card rounded-2xl p-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400 mb-4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">04</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-slate-100">Micro-avancées commitées</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Aucun travail perdu sur un crash.</p>
     </div>
-    <div class="card rounded-xl p-6">
-      <div class="text-2xl accent font-bold mb-3">05</div>
-      <h3 class="font-semibold mb-2">Isolation par contexte</h3>
-      <p class="text-sm text-slate-400">Un container par client/projet, identités séparées.</p>
+    <div class="card rounded-2xl p-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400 mb-4" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01"/><path d="M7 16.5h.01"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">05</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-slate-100">Isolation par contexte</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Un container par client/projet, identités séparées.</p>
     </div>
-    <div class="card rounded-xl p-6">
-      <div class="text-2xl accent-2 font-bold mb-3">06</div>
-      <h3 class="font-semibold mb-2">Moindre privilège</h3>
-      <p class="text-sm text-slate-400">Chaque outil a l'accès minimum nécessaire.</p>
+    <div class="card rounded-2xl p-6">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400 mb-4" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">06</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-slate-100">Moindre privilège</h3>
+      <p class="text-sm text-slate-400 leading-relaxed">Chaque outil a l'accès minimum nécessaire.</p>
     </div>
-    <div class="card rounded-xl p-6 sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-orange-500/10 to-cyan-500/10 border-orange-500/30">
-      <div class="text-2xl accent font-bold mb-3">07</div>
-      <h3 class="font-semibold mb-2 text-lg">Rigueur &gt; vitesse</h3>
-      <p class="text-slate-300">Mieux vaut une session lente et exacte qu'une session rapide et approximative. Un agent yes-man qui laisse passer les erreurs est moins utile qu'un interlocuteur qui challenge.</p>
+    <div class="card rounded-2xl p-6 sm:col-span-2 lg:col-span-3 bg-gradient-to-br from-orange-500/10 via-transparent to-cyan-500/10 border-orange-500/30">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400 mb-4" aria-hidden="true"><path d="M12 2 4 7v5c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V7l-8-5z"/><path d="m9 12 2 2 4-4"/></svg>
+      <div class="font-mono text-[0.7rem] text-slate-500 uppercase tracking-wider">07</div>
+      <h3 class="font-display font-semibold mt-1 mb-2 text-lg text-slate-100">Rigueur &gt; vitesse</h3>
+      <p class="text-slate-300 leading-relaxed max-w-3xl">
+        Mieux vaut une session lente et exacte qu'une session rapide et approximative. Un agent yes-man qui laisse passer les erreurs est moins utile qu'un interlocuteur qui challenge.
+      </p>
     </div>
   </div>
 </section>
 
 <!-- CONTACT -->
-<section id="contact" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 border-t border-slate-800">
-  <div class="card rounded-2xl p-8 sm:p-12 text-center bg-gradient-to-br from-orange-500/10 to-cyan-500/10 border-orange-500/30">
-    <h2 class="text-3xl sm:text-4xl font-bold mb-4">Envie d'implémenter cette architecture ?</h2>
-    <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-8">
-      Setup complet, onboarding, adaptation à ton stack, formation de ton équipe. Je suis disponible pour des missions courtes (1 semaine) ou longues.
+<section id="contact" class="max-w-6xl mx-auto px-5 sm:px-8 py-24">
+  <div class="card rounded-3xl p-10 sm:p-14 text-center bg-gradient-to-br from-orange-500/10 via-transparent to-cyan-500/10 border-orange-500/30 reveal">
+    <h2 class="font-display text-3xl sm:text-5xl font-bold mb-5">Envie d'implémenter cette architecture&nbsp;?</h2>
+    <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-9 leading-relaxed">
+      Setup complet, onboarding, adaptation à ton stack, formation de ton équipe. Disponible pour des missions courtes (1 semaine) ou longues.
     </p>
     <div class="flex flex-wrap gap-4 justify-center">
-      <a href="mailto:contact@example.com" class="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-900 font-semibold transition">
+      <a href="mailto:adlaneould94@gmail.com?subject=Agentic%20Vault%20—%20demande%20d'implémentation" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
         Me contacter
       </a>
-      <a href="Architecture_Claude_Overview.pdf" class="px-6 py-3 rounded-xl border border-slate-600 hover:border-slate-400 font-semibold transition">
+      <a href="Architecture_Claude_Overview.pdf" target="_blank" rel="noopener" class="btn-ghost">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         Télécharger le PDF
       </a>
     </div>
   </div>
 </section>
 
-<footer class="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-center text-sm text-slate-500 border-t border-slate-800">
-  <p>Agentic Vault — méthode de travail humain × IA</p>
-  <p class="mt-2">Document neutralisé — version publique. Diagrammes rendus via Mermaid.</p>
+<footer class="max-w-6xl mx-auto px-5 sm:px-8 py-10 text-center text-sm text-slate-500">
+  <p class="font-mono text-xs">agentic-vault · méthode de travail humain × IA</p>
+  <p class="mt-2 text-slate-600 text-xs">Document neutralisé — version publique. Diagrammes rendus via Mermaid.</p>
 </footer>
+
+<script>
+  // Scroll reveal (no-op under reduced motion)
+  (function () {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const els = document.querySelectorAll('.reveal');
+    if (reduce || !('IntersectionObserver' in window)) {
+      els.forEach(el => el.classList.add('in'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(el => io.observe(el));
+  })();
+</script>
 
 </body>
 </html>
