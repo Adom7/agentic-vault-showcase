@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Vault — Architecture Claude Code</title>
+<meta name="description" content="Architecture de travail entre un développeur humain et des agents IA (Claude Code, Codex). Vault partagé, mémoire persistante, workflow agentique.">
+<meta property="og:title" content="Agentic Vault — Architecture Claude Code">
+<meta property="og:description" content="Un seul cerveau, plusieurs instances. Vault partagé, mémoire persistante, zéro dérive entre sessions.">
+<meta property="og:type" content="website">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg: #0b1220;
+    --bg-2: #111a2e;
+    --text: #e7ecf3;
+    --muted: #94a3b8;
+    --accent: #fb923c;
+    --accent-2: #38bdf8;
+    --border: #1e293b;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    min-height: 100vh;
+  }
+  .accent { color: var(--accent); }
+  .accent-2 { color: var(--accent-2); }
+  .card {
+    background: rgba(17, 26, 46, 0.6);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+  }
+  .diagram-wrap {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  .diagram-wrap img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .gradient-text {
+    background: linear-gradient(90deg, #fb923c 0%, #f472b6 50%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: rgba(251, 146, 60, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(251, 146, 60, 0.3);
+  }
+  .prefix-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- NAV -->
+<nav class="sticky top-0 z-50 backdrop-blur-md bg-slate-900/70 border-b border-slate-800">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-400 to-cyan-400"></div>
+      <span class="font-bold text-lg">Agentic Vault</span>
+    </div>
+    <div class="hidden md:flex gap-6 text-sm text-slate-300">
+      <a href="#overview" class="hover:text-white">Overview</a>
+      <a href="#structure" class="hover:text-white">Structure</a>
+      <a href="#sessions" class="hover:text-white">Sessions</a>
+      <a href="#stack" class="hover:text-white">Stack</a>
+      <a href="#principles" class="hover:text-white">Principes</a>
+      <a href="#contact" class="hover:text-white accent">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="max-w-6xl mx-auto px-4 sm:px-6 pt-16 sm:pt-24 pb-16">
+  <span class="pill mb-6">Méthode éprouvée · Production-ready</span>
+  <h1 class="text-4xl sm:text-6xl font-bold leading-tight mt-4">
+    Un seul cerveau.<br>
+    <span class="gradient-text">Plusieurs instances d'IA.</span>
+  </h1>
+  <p class="mt-6 text-xl text-slate-300 max-w-3xl leading-relaxed">
+    Une architecture de travail entre un développeur humain et plusieurs agents IA (Claude Code, Codex…) centrée sur un <strong class="text-white">vault partagé, versionné et persistant</strong>. Chaque session démarre avec le même contexte. Aucune dérive. Zéro perte d'info entre deux conversations.
+  </p>
+  <div class="mt-10 flex flex-wrap gap-4">
+    <a href="#overview" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-900 font-semibold transition">
+      Explorer l'architecture →
+    </a>
+    <a href="#contact" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-slate-700 hover:border-slate-500 text-slate-200 font-semibold transition">
+      Demander l'implémentation
+    </a>
+  </div>
+  <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="card rounded-xl p-4">
+      <div class="text-3xl font-bold accent">9</div>
+      <div class="text-sm text-slate-400 mt-1">diagrammes</div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-3xl font-bold accent-2">14</div>
+      <div class="text-sm text-slate-400 mt-1">préfixes normalisés</div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-3xl font-bold accent">2</div>
+      <div class="text-sm text-slate-400 mt-1">couches mémoire</div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-3xl font-bold accent-2">∞</div>
+      <div class="text-sm text-slate-400 mt-1">sessions persistantes</div>
+    </div>
+  </div>
+</header>
+
+<!-- OVERVIEW -->
+<section id="overview" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#fb923c"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">01 — Vue d'ensemble</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Le vault comme source de vérité unique</h2>
+  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed">
+    Chaque session d'IA commence en lisant la même source, et termine en la mettant à jour. Pas de RAG externe, pas de base vectorielle : juste du Markdown versionné dans Git, structuré pour être lu par les humains <strong class="text-white">et</strong> par les modèles.
+  </p>
+  <div class="diagram-wrap mt-10">
+    <img src="diagrams/diag_1.png" alt="Architecture vue d'ensemble">
+  </div>
+</section>
+
+<!-- STRUCTURE -->
+<section id="structure" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#38bdf8"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">02 — Structure</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Double couche : humaine et LLM-dense</h2>
+  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
+    Le vault sépare physiquement deux mondes : les notes lisibles dans Obsidian, et le dossier <code class="text-cyan-300">_claude/</code> pensé pour être consommé par des modèles. Chaque couche a ses règles, ses préfixes, ses contraintes.
+  </p>
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="diagram-wrap">
+      <img src="diagrams/diag_2.png" alt="Structure du vault">
+    </div>
+    <div class="diagram-wrap">
+      <img src="diagrams/diag_4.png" alt="Double couche mémoire">
+    </div>
+  </div>
+</section>
+
+<!-- NOMENCLATURE -->
+<section id="nomenclature" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#fb923c"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">03 — Nomenclature</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Des préfixes, une règle universelle</h2>
+  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
+    Chaque fichier porte un préfixe qui détermine son type, son emplacement et son cycle de vie. Format :
+    <code class="text-cyan-300 bg-slate-800 px-2 py-1 rounded ml-2">&lt;PREFIX&gt;_[&lt;TEMPOREL&gt;_]&lt;slug&gt;.md</code>
+  </p>
+
+  <div class="overflow-x-auto card rounded-xl">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left border-b border-slate-700">
+          <th class="p-3 text-slate-400">Préfixe</th>
+          <th class="p-3 text-slate-400">Usage</th>
+          <th class="p-3 text-slate-400">Dossier</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800">
+        <tr><td class="p-3 prefix-code">PRJ_</td><td class="p-3">Cahier projet LLM-dense</td><td class="p-3 text-slate-400">_claude/projects/</td></tr>
+        <tr><td class="p-3 prefix-code">NOTE_</td><td class="p-3">Note projet humaine</td><td class="p-3 text-slate-400">Projets/</td></tr>
+        <tr><td class="p-3 prefix-code">FB_</td><td class="p-3">Règle de comportement IA</td><td class="p-3 text-slate-400">_claude/feedback/</td></tr>
+        <tr><td class="p-3 prefix-code">REF_</td><td class="p-3">Credential, architecture, token</td><td class="p-3 text-slate-400">_claude/references/</td></tr>
+        <tr><td class="p-3 prefix-code">USR_</td><td class="p-3">Profil utilisateur</td><td class="p-3 text-slate-400">_claude/profile/</td></tr>
+        <tr><td class="p-3 prefix-code">SES_</td><td class="p-3">Log de session daté</td><td class="p-3 text-slate-400">Sessions/</td></tr>
+        <tr><td class="p-3 prefix-code">COMPACT_</td><td class="p-3">Sauvegarde pré-compaction</td><td class="p-3 text-slate-400">Sessions/_compact/</td></tr>
+        <tr><td class="p-3 prefix-code">CNCPT_</td><td class="p-3">Concept, théorie</td><td class="p-3 text-slate-400">Concepts/</td></tr>
+        <tr><td class="p-3 prefix-code">OUTIL_</td><td class="p-3">Doc d'un outil / stack</td><td class="p-3 text-slate-400">Outils/</td></tr>
+        <tr><td class="p-3 prefix-code">FEAT_</td><td class="p-3">Feature transversale</td><td class="p-3 text-slate-400">_claude/features/</td></tr>
+        <tr><td class="p-3 prefix-code">AGENT_</td><td class="p-3">Définition d'un agent IA</td><td class="p-3 text-slate-400">_claude/team/</td></tr>
+        <tr><td class="p-3 prefix-code">TEAM_</td><td class="p-3">Orchestrateur d'agents</td><td class="p-3 text-slate-400">_claude/team/</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="diagram-wrap mt-10">
+    <img src="diagrams/diag_3.png" alt="Arbre de décision préfixes">
+  </div>
+</section>
+
+<!-- SESSIONS -->
+<section id="sessions" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#38bdf8"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">04 — Sessions</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Cycle de vie & compaction du contexte</h2>
+  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
+    Une session suit un protocole strict : <strong class="text-white">pull → lecture mémoire → travail en micro-avancées commitées → compaction proactive → push final</strong>. Le contexte d'un modèle est une ressource limitée : on le gère, on ne l'attend pas.
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <div>
+      <h3 class="text-xl font-semibold mb-4 text-slate-200">Cycle de vie</h3>
+      <div class="diagram-wrap">
+        <img src="diagrams/diag_5.png" alt="Cycle de vie d'une session">
+      </div>
+    </div>
+    <div>
+      <h3 class="text-xl font-semibold mb-4 text-slate-200">Protocole de compaction</h3>
+      <div class="diagram-wrap">
+        <img src="diagrams/diag_6.png" alt="Protocole compaction">
+      </div>
+    </div>
+  </div>
+
+  <div class="card rounded-xl p-6 mt-10">
+    <h4 class="font-semibold text-slate-200 mb-3">Déclencheurs de compaction</h4>
+    <div class="grid sm:grid-cols-3 gap-4 text-sm">
+      <div class="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+        <div class="text-green-400 font-semibold">&lt; 65%</div>
+        <div class="text-slate-300 mt-1">Continuer normalement</div>
+      </div>
+      <div class="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+        <div class="text-orange-400 font-semibold">65–70%</div>
+        <div class="text-slate-300 mt-1">Déclencher COMPACT</div>
+      </div>
+      <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+        <div class="text-red-400 font-semibold">&gt; 85%</div>
+        <div class="text-slate-300 mt-1">Compaction urgente</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section id="stack" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#fb923c"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">05 — Stack d'exécution</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Containers Docker isolés, MCP modulaires</h2>
+  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
+    Chaque contexte de travail (perso, client A, client B…) tourne dans son propre container : <strong class="text-white">réseau séparé, identité git propre, aucun volume monté</strong>. Les intégrations externes passent par des MCP servers, ajoutables à chaud.
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <div class="diagram-wrap">
+      <img src="diagrams/diag_7.png" alt="Containers Docker">
+    </div>
+    <div class="diagram-wrap">
+      <img src="diagrams/diag_8.png" alt="Intégrations MCP">
+    </div>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-4 mt-10">
+    <div class="card rounded-xl p-5">
+      <div class="text-orange-400 text-sm font-semibold mb-2">IMAGE DE BASE</div>
+      <ul class="text-sm text-slate-300 space-y-1">
+        <li>• Node 20 Debian slim</li>
+        <li>• git, openssh-client, ripgrep, vim</li>
+        <li>• Claude Code + Codex installés globalement</li>
+        <li>• User non-root avec sudo</li>
+      </ul>
+    </div>
+    <div class="card rounded-xl p-5">
+      <div class="text-cyan-400 text-sm font-semibold mb-2">ISOLATION</div>
+      <ul class="text-sm text-slate-300 space-y-1">
+        <li>• Réseaux Docker séparés</li>
+        <li>• Identités git distinctes par container</li>
+        <li>• Secrets via Infisical, jamais en .env</li>
+        <li>• Pas de `docker compose down` — stop/start uniquement</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- GIT -->
+<section id="git" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#38bdf8"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">06 — Git workflow</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-6">Commit par micro-avancée, jamais de batch</h2>
+  <p class="text-slate-300 text-lg max-w-3xl leading-relaxed mb-10">
+    Une unité atomique de travail = un commit. L'historique raconte exactement comment l'IA a pensé, étape par étape. Un crash en plein milieu ? Le dernier commit est toujours récupérable depuis n'importe quelle machine.
+  </p>
+  <div class="diagram-wrap">
+    <img src="diagrams/diag_9.png" alt="Git workflow">
+  </div>
+</section>
+
+<!-- PRINCIPLES -->
+<section id="principles" class="max-w-6xl mx-auto px-4 sm:px-6 py-16 border-t border-slate-800">
+  <div class="flex items-center gap-3 mb-4">
+    <span class="dot" style="background:#fb923c"></span>
+    <span class="text-sm uppercase tracking-widest text-slate-400">07 — Principes</span>
+  </div>
+  <h2 class="text-3xl sm:text-4xl font-bold mb-10">7 principes fondateurs</h2>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="card rounded-xl p-6">
+      <div class="text-2xl accent font-bold mb-3">01</div>
+      <h3 class="font-semibold mb-2">Source de vérité unique</h3>
+      <p class="text-sm text-slate-400">Le vault Git. Pas d'info critique ailleurs.</p>
+    </div>
+    <div class="card rounded-xl p-6">
+      <div class="text-2xl accent-2 font-bold mb-3">02</div>
+      <h3 class="font-semibold mb-2">Réversibilité totale</h3>
+      <p class="text-sm text-slate-400">Tout est versionné, tout est récupérable.</p>
+    </div>
+    <div class="card rounded-xl p-6">
+      <div class="text-2xl accent font-bold mb-3">03</div>
+      <h3 class="font-semibold mb-2">Séparation des couches</h3>
+      <p class="text-sm text-slate-400">Humain ↔ LLM-dense, jamais mélangés.</p>
+    </div>
+    <div class="card rounded-xl p-6">
+      <div class="text-2xl accent-2 font-bold mb-3">04</div>
+      <h3 class="font-semibold mb-2">Micro-avancées commitées</h3>
+      <p class="text-sm text-slate-400">Aucun travail perdu sur un crash.</p>
+    </div>
+    <div class="card rounded-xl p-6">
+      <div class="text-2xl accent font-bold mb-3">05</div>
+      <h3 class="font-semibold mb-2">Isolation par contexte</h3>
+      <p class="text-sm text-slate-400">Un container par client/projet, identités séparées.</p>
+    </div>
+    <div class="card rounded-xl p-6">
+      <div class="text-2xl accent-2 font-bold mb-3">06</div>
+      <h3 class="font-semibold mb-2">Moindre privilège</h3>
+      <p class="text-sm text-slate-400">Chaque outil a l'accès minimum nécessaire.</p>
+    </div>
+    <div class="card rounded-xl p-6 sm:col-span-2 lg:col-span-3 bg-gradient-to-r from-orange-500/10 to-cyan-500/10 border-orange-500/30">
+      <div class="text-2xl accent font-bold mb-3">07</div>
+      <h3 class="font-semibold mb-2 text-lg">Rigueur &gt; vitesse</h3>
+      <p class="text-slate-300">Mieux vaut une session lente et exacte qu'une session rapide et approximative. Un agent yes-man qui laisse passer les erreurs est moins utile qu'un interlocuteur qui challenge.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" class="max-w-6xl mx-auto px-4 sm:px-6 py-20 border-t border-slate-800">
+  <div class="card rounded-2xl p-8 sm:p-12 text-center bg-gradient-to-br from-orange-500/10 to-cyan-500/10 border-orange-500/30">
+    <h2 class="text-3xl sm:text-4xl font-bold mb-4">Envie d'implémenter cette architecture ?</h2>
+    <p class="text-slate-300 text-lg max-w-2xl mx-auto mb-8">
+      Setup complet, onboarding, adaptation à ton stack, formation de ton équipe. Je suis disponible pour des missions courtes (1 semaine) ou longues.
+    </p>
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="mailto:contact@example.com" class="px-6 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-900 font-semibold transition">
+        Me contacter
+      </a>
+      <a href="Architecture_Claude_Overview.pdf" class="px-6 py-3 rounded-xl border border-slate-600 hover:border-slate-400 font-semibold transition">
+        Télécharger le PDF
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer class="max-w-6xl mx-auto px-4 sm:px-6 py-10 text-center text-sm text-slate-500 border-t border-slate-800">
+  <p>Agentic Vault — méthode de travail humain × IA</p>
+  <p class="mt-2">Document neutralisé — version publique. Diagrammes rendus via Mermaid.</p>
+</footer>
+
+</body>
+</html>
