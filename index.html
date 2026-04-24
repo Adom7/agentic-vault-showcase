@@ -245,6 +245,8 @@
   /* Entry reveal — scroll-triggered via IntersectionObserver */
   .reveal { opacity: 0; transform: translateY(16px); transition: opacity 700ms ease, transform 700ms ease; }
   .reveal.in { opacity: 1; transform: none; }
+  /* Never hide diagrams — Mermaid needs computed width to render properly, and zero-opacity parent delays user feedback */
+  .reveal:has(> .diagram-wrap), .reveal .diagram-wrap { opacity: 1 !important; transform: none !important; }
   @media (prefers-reduced-motion: reduce) {
     .reveal, .reveal.in { opacity: 1; transform: none; transition: none; }
     .pill .pulse { animation: none; }
@@ -426,10 +428,38 @@
     z-index: 40;
     display: none;
   }
-  @media (min-width: 1280px) {
+  @media (min-width: 1024px) {
     .fs-sidebar { display: block; }
     .with-sidebar-gutter { padding-left: 300px; }
   }
+  /* Mobile / narrow viewport : sidebar overlays when toggled */
+  .fs-sidebar.open-mobile { display: block; }
+  @media (max-width: 1023px) {
+    .fs-sidebar.open-mobile {
+      top: 72px;
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-height: calc(100vh - 90px);
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.7);
+    }
+  }
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid #1e293b;
+    background: rgba(15,23,42,0.6);
+    color: #cbd5e1;
+    margin-right: 6px;
+    cursor: pointer;
+    transition: border-color 180ms ease, color 180ms ease;
+  }
+  .sidebar-toggle:hover { border-color: #334155; color: #fff; }
+  @media (min-width: 1024px) { .sidebar-toggle { display: none; } }
   .fs-header {
     padding: 14px 16px 10px;
     border-bottom: 1px solid #1e293b;
@@ -519,10 +549,15 @@
 <!-- NAV -->
 <nav class="nav-wrap">
   <div class="nav-inner flex items-center justify-between">
-    <a href="#top" class="flex items-center gap-2.5">
-      <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-cyan-400 shadow-inner"></span>
-      <span class="font-display font-bold text-[15px] tracking-tight">Agentic Vault</span>
-    </a>
+    <div class="flex items-center">
+      <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Afficher l'arborescence" title="Arborescence du vault">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6a2 2 0 0 1 2-2h4l2 2h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6z"/></svg>
+      </button>
+      <a href="#top" class="flex items-center gap-2.5">
+        <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-cyan-400 shadow-inner"></span>
+        <span class="font-display font-bold text-[15px] tracking-tight">Agentic Vault</span>
+      </a>
+    </div>
     <div class="hidden md:flex gap-6 text-sm text-slate-300">
       <a href="#overview" class="hover:text-white transition-colors">Overview</a>
       <a href="#structure" class="hover:text-white transition-colors">Structure</a>
@@ -826,23 +861,23 @@ flowchart LR
     <div class="diagram-wrap">
       <pre class="mermaid">
 flowchart TD
-    ROOT[Vault/]
-    ROOT --&gt; CLAUDE[_claude/<br/>LLM-dense]
-    ROOT --&gt; CONCEPTS[Concepts/<br/>définitions techniques]
-    ROOT --&gt; OUTILS[Outils/<br/>docs stack &amp; services]
-    ROOT --&gt; PROJETS[Projets/<br/>notes humaines]
-    ROOT --&gt; SESSIONS[Sessions/<br/>logs datés]
-    ROOT --&gt; DUMP[Dump/<br/>brouillons]
-    ROOT --&gt; NOM[NOMENCLATURE.md]
+    ROOT["Vault"]
+    ROOT --&gt; CLAUDE["_claude<br/>LLM-dense"]
+    ROOT --&gt; CONCEPTS["Concepts<br/>définitions techniques"]
+    ROOT --&gt; OUTILS["Outils<br/>docs stack"]
+    ROOT --&gt; PROJETS["Projets<br/>notes humaines"]
+    ROOT --&gt; SESSIONS["Sessions<br/>logs datés"]
+    ROOT --&gt; DUMP["Dump<br/>brouillons"]
+    ROOT --&gt; NOM["NOMENCLATURE.md"]
 
-    CLAUDE --&gt; PROFILE[profile/<br/>identité]
-    CLAUDE --&gt; PROJECTS[projects/<br/>cahiers LLM]
-    CLAUDE --&gt; FEEDBACK[feedback/<br/>règles]
-    CLAUDE --&gt; REFS[references/<br/>infra, creds]
-    CLAUDE --&gt; FEATURES[features/<br/>capacités]
-    CLAUDE --&gt; TEAM[team/<br/>agents]
-    CLAUDE --&gt; TRACKING[tracking/<br/>stats]
-    CLAUDE --&gt; MEM[MEMORY.md<br/>index d'entrée]
+    CLAUDE --&gt; PROFILE["profile<br/>identité"]
+    CLAUDE --&gt; PROJECTS["projects<br/>cahiers LLM"]
+    CLAUDE --&gt; FEEDBACK["feedback<br/>règles"]
+    CLAUDE --&gt; REFS["references<br/>infra, creds"]
+    CLAUDE --&gt; FEATURES["features<br/>capacités"]
+    CLAUDE --&gt; TEAM["team<br/>agents"]
+    CLAUDE --&gt; TRACKING["tracking<br/>stats"]
+    CLAUDE --&gt; MEM["MEMORY.md<br/>index d entrée"]
 
     style CLAUDE fill:#1e293b,color:#f1f5f9,stroke:#38bdf8,stroke-width:2px
     style MEM fill:#fb923c,color:#0b1220,stroke:#f97316,stroke-width:2px
@@ -855,31 +890,33 @@ flowchart TD
     <div class="diagram-wrap">
       <pre class="mermaid">
 flowchart LR
-    subgraph HUMAIN[Couche humaine — Obsidian]
-        N1[Projets/*.md]
-        N2[Concepts/*.md]
-        N3[Outils/*.md]
-        N4[Sessions/*.md]
+    subgraph HUMAIN ["Couche humaine - Obsidian"]
+        N1["Projets/*.md"]
+        N2["Concepts/*.md"]
+        N3["Outils/*.md"]
+        N4["Sessions/*.md"]
     end
 
-    subgraph LLM[Couche LLM-dense — _claude/]
-        M1[MEMORY.md<br/>index]
-        M2[USR_*.md<br/>profil]
-        M3[PRJ_*.md<br/>cahiers]
-        M4[FB_*.md<br/>règles]
-        M5[REF_*.md<br/>infra]
+    subgraph LLM ["Couche LLM-dense - _claude/"]
+        M1["MEMORY.md"]
+        M2["USR_*.md"]
+        M3["PRJ_*.md"]
+        M4["FB_*.md"]
+        M5["REF_*.md"]
     end
 
-    HUM[Développeur] --&gt; HUMAIN
-    IA[Agent IA] --&gt; LLM
-    IA -.-&gt;|lecture si besoin| HUMAIN
-    HUM -.-&gt;|relit| LLM
-    HUMAIN &lt;--&gt;|sync git| LLM
+    HUM["Développeur"] --&gt; HUMAIN
+    IA["Agent IA"] --&gt; LLM
+    IA -.-&gt;|"lecture si besoin"| HUMAIN
+    HUM -.-&gt;|"relit"| LLM
+    HUMAIN &lt;--&gt;|"sync git"| LLM
 
-    style HUMAIN fill:rgba(56,189,248,0.08),stroke:#38bdf8
-    style LLM fill:rgba(251,146,60,0.08),stroke:#fb923c
+    classDef humain fill:#0c4a6e,color:#e0f2fe,stroke:#38bdf8,stroke-width:1.5px
+    classDef llm fill:#431407,color:#ffedd5,stroke:#fb923c,stroke-width:1.5px
+    class HUMAIN humain
+    class LLM llm
       </pre>
-      <div class="diagram-cap">04 — double couche humaine × LLM</div>
+      <div class="diagram-cap">03 — double couche humaine × LLM</div>
     </div>
   </div>
 </section>
@@ -941,7 +978,7 @@ flowchart TD
 
     style START fill:#1e293b,color:#f1f5f9,stroke:#fb923c,stroke-width:2px
     </pre>
-    <div class="diagram-cap">03 — arbre de décision des préfixes</div>
+    <div class="diagram-cap">04 — arbre de décision des préfixes</div>
   </div>
 </section>
 
@@ -1257,8 +1294,21 @@ gitGraph
     els.forEach(el => io.observe(el));
   })();
 
-  // 2) VSCode-like sidebar — toggle folders + search + active section highlight
+  // 2) VSCode-like sidebar — toggle folders + search + active section highlight + mobile toggle
   (function () {
+    // Mobile sidebar toggle button
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const sidebar = document.querySelector('.fs-sidebar');
+    if (toggleBtn && sidebar) {
+      toggleBtn.addEventListener('click', () => sidebar.classList.toggle('open-mobile'));
+      // Close when clicking a file on mobile
+      sidebar.addEventListener('click', (e) => {
+        if (window.innerWidth < 1024 && e.target.closest('.fs-item[data-target]')) {
+          setTimeout(() => sidebar.classList.remove('open-mobile'), 200);
+        }
+      });
+    }
+
     // Toggle folders
     document.querySelectorAll('.fs-folder > .fs-item').forEach(item => {
       item.addEventListener('click', (e) => {
